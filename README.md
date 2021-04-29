@@ -383,6 +383,30 @@ sleep()方法有两种重载形式
 - static void sleep(long millis)：让当前正在执行的线程暂停millis毫秒，并进入阻塞状态，该方法收到系统计时器和线程调度器的精度与准确度的影响。
 - static void sleep(long millis,int nanos)
 
+# 真鸡儿累
+# 布列斯特要塞
+# 休息
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
