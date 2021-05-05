@@ -388,49 +388,327 @@ sleep()方法有两种重载形式
 # 休息
 
 
+#### 2121/4/30 星期五 晴
+  此外Thread还提供了一个与sleep()方法有点相似的yield()静态方法，它可以让正在执行的线程暂停，但它不会阻塞该线程，只是将该线程转入就绪状态。
+  当某个线程调用了yield()方法暂停之后，只有优先级与当前线程相同，或者优先级比单钱线程更高的处于就绪状态的线程才会获得执行的机会。
+  - sleep()方法暂停当前线程后，会给其他线程执行机会，不会理会其他线程优先级；但yield()方法只会给优先级相同，或优先级更高的线程执行机会。
+  - sleep()方法将会线程转入阻塞状态，知道经过阻塞时间才会转入就绪状态；而yield()不会将线程转入阻塞状态，它只是强制当前线程进入就绪状态。
+  - sleep()方法声明抛出异常InterruptException异常，所以调用sleep()方法时要么捕捉该异常，要么显式抛出异常；而yield()方法没有声明抛出任何异常。
+  - sleep()方法比yield()方法有更好的可移植性，通常不建议施一公yield()方法来控制并发线程的执行。
 
+###### 改变线程优先级
+  每个线程的默认优先级都与创建它的父线程的优先级相同，在默认情况下，main线程具有普通优先级，由main线程创建的子线程也具有普通优先级。
+  Thread类提供了setPriority（int newPriority）、getPriority()方法来设置和返回指定线程的优先级。
+  - MAX_PRIORITY: 10
+  - MIN_PRIORITY: 1
+  - NORM_PRIORITY: 5
 
+```java
+package thread;
 
+public class PriorityTest extends Thread{
+    public PriorityTest(String name){
+        super(name);
+    }
+    public void run(){
+        for(int i = 0; i < 50; i++){
+            System.out.println(getName()+"，其优先级是"
+            + getPriority()+",循环变量的值为："+ i);
+        }
+    }
+    public static void main(String[] args){
+        Thread.currentThread().setPriority(6);
+        for(int i = 0; i < 30; i++){
+            if(i == 10){
+                PriorityTest low = new PriorityTest("低优先级小线程");
+                low.setPriority(Thread.MIN_PRIORITY);
+                low.start();
+                System.out.println("创建之初的优先级："+low.getPriority());
 
+            }
+            if (i == 20){
+                PriorityTest high = new PriorityTest("高优先级线程");
+                high.setPriority(Thread.MAX_PRIORITY);
 
+                high.start();
+            }
+        }
+    }
+}
+```
 
+##### 线程同步
+# hashCode()和equals()方法重写
+>  任何时刻只能有一个线程可以获得对 同步监视器的锁定，当同步代码块完成后，该线程会释放对该同步监视器的锁定。
+>  
 
+###### 同步代码块
 
+###### 同步方法 
+线程安全的类具有如下特征：
+- 该类的对象可以被多个线程安全地访问
+- 每个线程调用该对象的人恶化方法之后都将得到正确结果。
+- 每个线程调用该对象的 任意方法之后，该对象状态依然保持合理状态。
 
+> synchronized关键字可以修饰代码块，但不能修饰构造器、成员变量等。
+> 
 
+  同步方法的同步监视器是this，而this总代表调用该方法的对象。
+  可变类的线程安全是以降低程序的运行效率作为代价的，为了减少线程安全所带来的负面影响，程序可采用如下策略。
+  - 不要对线程安全类的所有方法都进行同步，只对那些会改变竞争资源的方法进行同步。
+  - 如果可变类有两种运行环境：单线程环境和多线程环境，则应该为该可变类提供两种版本，即线程不安全版本和线程安全版本。在单线程环境中使用线程不安全版本以保证性能，在多线程环境中使用线程安全版本。
 
+> JDK所提供的StringBuilder、StringBuffer就是为了照顾单线程环境和多线程环境所提供的类，单线程环境下应该使用StringBuilder来保证较好的性能；当需要保证多线程安全时，就应该使用StringBuffer。
+> 
 
+###### 释放同步监视器的锁定
+  - 当前线程的同步方法，同步代码块执行结束，当前线程即释放同步监视器。
+  - 当前线程在同步代码块、同步方法中遇到break、return终止了该代码块、该方法继续执行，当前线程将会释放同步监视器
+  - 当前线程在同步代码块、同步方法中出现了未处理的Error或Exception，导致该代码块、该方法异常结束时，当前线程将会释放同步监视器。
+  - 当前线程执行同步代码块或同步方法时，程序执行了同步监视器对象的wait()方法，则当前线程暂停，并释放同步监视器器。
+    在如下情况，不会释放同步监视器
+  - 线程执行同步代码块或同步方法时，程序调用了Thread.sleep()、Thread.yield()方法来暂停当前线程的执行，当前线程不会释放同步监视器。
+  - 线程执行同步代码块时，其他线程调用了该线程的suspend()方法将该线程挂起，该线程不会释放同步监视器。
 
+###### 同步锁（Lock）
+###### 死锁
+  当两个线程相互等待对象释放同步监视器时就会发生死锁，Java虚拟机没有监测，也没有采取措施来处理死锁情况。
 
+```java
+class A{
+    public synchronized void foo(B b){
+        System.out.println("当前线程名："+Thread.currentThread().getName()
+        + "进入了A实例的foo()方法");
+        try{
+            Thread.sleep(200);
+        }catch(InterruptedException ex){
+            ex.printStackTrace();
+        }
+        System.out.println("当前线程名"+ Thread.currentThread().getName()
+        + "企图调用B实例的last()方法");
+        b.last();
+    }
+    public synchronized void last(){
+        System.out.println("进入了A类的last()方法内部");
+    }
+}
+class B{
+    public synchronized void bar(A a){
+        System.out.println("当前线程名："+Thread.currentThread().getName()
+                + "进入了B实例的bar()方法");
+        try{
+            Thread.sleep(200);
+        }catch(InterruptedException ex){
+            ex.printStackTrace();
+        }
+        System.out.println("当前线程名"+ Thread.currentThread().getName()
+                + "企图调用A实例的last()方法");
+        a.last();
+    }
+    public synchronized void last(){
+        System.out.println("进入了B类的last()方法内部");
+    }
+}
+public class DeadLock implements Runnable{
+    A a = new A();
+    B b = new B();
+    public void init(){
+        //Thread.currentThread().setName("主线程");
+        a.foo(b);
+        System.out.println("进入了main后");
+    }
 
+    @Override
+    public void run() {
+        //Thread.currentThread().setName("副线程");
+        b.bar(a);
+        System.out.println("进入了Thread-0后");
+    }
+    public static void main(String[] args){
+        DeadLock dl = new DeadLock();
+        new Thread(dl).start();
+        dl.init();
+    }
+}
+```
+##### 线程通讯
 
+###### 传统的线程通讯
+  wait()、notify()和notifyAll()三个方法属于Thread类
 
+# 集合、线程
 
+###### 使用Condition控制线程通讯
+###### 使用阻塞队列(BlockingQueue)控制线程通讯
+**代码有待思考**输出结果与预期结果不一致，估计是多线程错误可以使用同步方法解决，大概
+```java
+import com.sun.deploy.util.BlackList;
 
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
+class Producer extends Thread{
+    private BlockingQueue<String> bq;
+    public Producer(BlockingQueue<String> bq){
+        this.bq = bq;
+    }
+    public void run(){
+        String[] strArr = new String[]{
+                "Java",
+                "Struts",
+                "Spring"
+        };
+        for (int i = 0; i < 3; i++){
+            System.out.println(getName() + "生产者准备生产集合元素！");
+            try{
+                Thread.sleep(3000);
+                bq.put(strArr[i % 3]);
+            }catch (Exception ex)
+            {
+                ex.printStackTrace();
+            }
+            System.out.println(getName()+"生成完成: " + bq);
+        }
+    }
+}
+class Consumer extends Thread{
+    private BlockingQueue<String> bq;
+    public Consumer(BlockingQueue<String> bq){
+        this.bq = bq;
+    }
+    public void run(){
+        while (true){
+            System.out.println(getName()+"消费者准备消费集合元素！");
+            try{
+                Thread.sleep(3000);
+                bq.remove();
+            }catch (Exception ex){
+                ex.printStackTrace();
+            }
+            System.out.println(getName()+ "消费完成" + bq);
+        }
+    }
+}
+public class BlockingQueueTest {
+    public static void main(String[] args){
+        BlockingQueue<String> bq = new ArrayBlockingQueue<>(1);
+        new Producer(bq).start();
+        new Producer(bq).start();
+        new Consumer(bq).start();
+    }
+}
 
+```
 
+  使用put()方法尝试放入元素将会阻塞线程；如果使用add()方法尝试放入元素将会引发异常；如果使用offer()方法尝试放入元素将会返回false，元素不会被放入。
+  于此类似的是，在BlockingQueue已空的情况下，程序使用take()方法尝试取出元素将会阻塞线程；
 
+##### 线程组和为处理异常
+一旦某个线程加入了指定线程组之后，该线程将一直属于该线程组，知道该线程死亡，线程运行中途不能改变它所 属的线程组。
+##### 线程池
+  线程池在系统启动时即创建大量的空闲的进程，程序将一个Runnable对象或Callable对象传给线程池，线程池在线程池就会启动一个空闲的线程来执行它们的run()或call()方法，当run()或call()方法执行结束之后，该线程并不会死亡，而是再次返回线程池成为空闲状态等待下一个Runnable对象的run()或call()方法。
+  除此之外，使用线程池可以有效地控制系统中并发线程的数量，当系统中包含大量并发线程时，会导致系统性能剧烈下降，甚至导致JVM崩溃，而线程池的最大线程数参数可以控制系统中并发线程数不超过此数。
+###### Java 8 改进的线程池
+# go
+#### 2021/5/2 星期天 晴
+  在Java 5 以前，开发者必须手动实现自己的线程池；从Java 5 开始，Java内建支持线程池。Java 5新增了一个Exceuteors工厂类来生成线程池，该工厂类包括以下静态工厂方法来创建线程。
+  Java 8在线程支持上增加了利用多CPU并行的能力，这样可以更好的发挥底层硬件的性能。
+  使用线程池来执行线程任务的步骤如下。
+  1. 调用Executors类的静态工厂方法创建一个ExecutorService对象，该对象代表一个线程池。
+  2. 创建Runnable实现类或Callable实现类的实例，作为线程执行任务。
+  3. 调用ExecutorService对象的submit()方法来提交Runnable实例或Callable实例.
+  4. 当不想提交任何任务时,调用ExecutorService对象的shutdown()方法来关闭线程池.
 
+```java
+public class ThreadPoolTest {
+    public static void main(String[] args) throws Exception{
+        //创建一个具有固定线程数(6)的线程池
+        ExecutorService pool = Executors.newFixedThreadPool(6);
+        //使用Lambda表达式创建Runnable对象
+        Runnable target = ()->{
+            for ( int i=0; i< 100; i++ ){
+                System.out.println(Thread.currentThread().getName()+"的i值为"+i);
+            }
+        };
+        //向线程池中提交两个线程
+        pool.submit(target);
+        pool.submit(target);
+        //关闭线程池
+        pool.shutdown();
+    }
+}
+```
+###### Java 8增强的ForkJoinPool
+  Java 7提供了ForkJoinPool来支持将一个任务拆分成多个"小任务"并行计算,在把多个小任务的结果合并成总的计算结果.ForkJoinPool时ExecutorService的实现类.
+  Java 8进一步扩展了ForkJoinPool的功能,Java 8为ForkJoinPool增加了通用池功能.
 
+##### 线程相关类
+###### ThreadLocal类
+  ThreadLocal,是Thread Local Variable(线程局部变量)的意思,线程局部变量的功能十分简单,就是为没有给使用该变量的线程都提供一个变量值的副本,使每一个线程都可以独立地改变自己的副本,而不会和其他线程的副本冲突。
+  - T get()：返回此线程局部变量中当前线程副本中的值。
+  - void remove()：删除此线程局部变量中当前线程的值。
+  - voidset(T value)：设置此线程局部变量中当前线程副本中的值。
 
+```java
+class tlAccount{
+    /*
+    * 定义一个ThreadLocak类型的变量，该变量将是一个线程局部变量
+    * 每个线程都会保留该变量的一个副本
+    * */
+    private ThreadLocal<String> name = new ThreadLocal<>();
 
+    public ThreadLocal<String> getName() {
+        return name;
+    }
 
+    public void setName(String name) {
+        this.name.set(name);
+    }
 
+    //定义一个初始化name成员变量的构造器
+    public tlAccount(String str){
+        this.name.set(str);
+        System.out.println("---"+this.name.get());
+    }
 
+}
 
+class MyTest extends Thread{
+    //
+    private tlAccount account;
+    public MyTest(tlAccount account, String name){
+        super(name);
+        this.account = account;
+    }
+    public void run(){
+        for(int i =0; i<  10; i++){
+            if(i==6){
+                account.setName(getName());
+            }
+            System.out.println(account.getName()+"账户i的值"+i);
+        }
+    }
+}
+public class ThreadLocalTest {
+    public static void main(String[] args){
+        tlAccount at = new tlAccount("初始名");
+        new MyTest(at ,"线程甲").start();
+        new MyTest(at ,"线程乙").start();
+    }
+}
+```
+  ThreadLocal和其他所有的同步机制一样，都是为了解决多线程对同一变量的访问冲突。这种情况下，系统并没有将这份资源复制多分，只是采用了安全机制来控制对这份资源的访问。
+  ThreadLocal提供了线程安全的共享对象，在编写多线程代码时，可以把不安全的整个变量封装进ThreadLocal，或者把该对象与线程相关的状态使用ThreadLocal保存。
 
+###### 保证线程不安全的集合
+  ArrayList、LinkedList、HashSet、TreeSet、HashMap、TreeMap等都是线程不安全的。
+  如果程序中有多个线程可能访问以上几个集合，就可以使用Collections提供的方法把这些集合包装成线程安全的集合。Collection提供了如下几个静态方法。
 
+###### 线程安全的集合类
+  Java 8扩展了ConcurrentHashMap的功能，Java 8为该类新增了30多个方法，这些方法可以借助于Stream和Lambda表达式支持执行聚集操作。
 
-
-
-
-
-
-
-
-
-
+###### Java 9新增的发布-订阅框架
+#### Java集合
 
 
 # Lambda表达式？
@@ -445,4 +723,28 @@ Lambda表达式结构
 - 当只有一个参数，且其类型可推导时，圆括号()可省略。
 - Lambda表达式的主题可包含零条或多条语句
 - 如果Lambda表达式主题只有一条语句，花括号可省略。匿名函数的返回类型与该主题表达式一致
-- 吐过Lambda表达式的主题包含一条以上语句，则表达式必须包含在花括号中。匿名函数的返回类型与代码块的返回类型一致，若没有则为空。
+- 吐过Lambda表达式的主题包含一条以上语句，则表达式必须包含在花括号中。匿名函数的返回类型与代码块的返回类型一致，若没有则为空
+
+
+
+#### 2021/5/5 星期三 晴
+写作业
+
+校园二手交易平台，写完。good。
+
+
+
+![颈椎病康复指南](D:\github\X-xiaobaoyihao.github.io\img\颈椎病康复指南.png)
+
+
+
+# next
+
+# 五月目标
+#### 1. 尽量向65kg靠拢
+#### 2. 看完《疯狂java讲义》、《高性能MySQL》、《spring实战》、《redis设计于实现》
+#### 3. 好好学习，天天向上
+#### 8.00起床--12.00睡觉
+#### 100个上下蹲，100个俯卧撑
+#### 奥里给
+
