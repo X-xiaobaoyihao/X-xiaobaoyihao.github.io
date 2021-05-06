@@ -748,3 +748,214 @@ Lambda表达式结构
 #### 100个上下蹲，100个俯卧撑
 #### 奥里给
 
+#### 2021/5/6 星期四 晴
+1. JVM垃圾回收算法
+
+  JVM运行时数据区中，线程私有的程序计数器、虚拟机栈、本地方法栈随线程的创建和退出而自动产生和销毁，不需要垃圾回收；而对于方法区和堆区，由于是随虚拟机的启动和退出而创建和销毁，在这期间被各线程共享，若不回收垃圾以腾出空间则最终会耗尽这两部分空间。因此JVM垃圾回收的是共享区域的内存，主要是方法区和Java堆内存的回收。
+  **方法区**
+  方法区的垃圾收集主要是回收废弃常量和无用的类(卸载类)
+  1. 该类的所有实例已被回收，即Java堆中无该类的任何实例（下层）
+  2. 该类对应的Java.lang.Class对象没有在任何地方被引用，无在任何地方通过反射访问该类的方法。（下层）
+  3. 加载该类的ClassLoader已被回收。(上层)
+
+    java 8提供了-xx:MetaspaceSize来设置出发元空间垃圾回收的阈值。
+
+  #### 什么是OOM？为什么会发生OOM？
+  1. OOM含义
+
+    OOM，全程“Out Of Memory”。
+  2. 为什么会出现java.lang.OutOfEemoryError:即OOM
+
+    当JVM因为没有足够的内存来为对象分配空间并且垃圾回收期也已经没有空间可回收时，就会抛出java.lang.OutOfMemoryError：
+    1. 自身原有：虚拟机本身可用的内存太少
+    2. 外在原因：如应用使用的太多，且用完没释放，浪费了内存。此时就会造成内存泄漏或内存溢出。
+    **内存泄漏：**申请用完的内存没有释放，导致虚拟机不能再次使用该内存，此时这段内存就泄漏了，因为申请者不用了，而又不能被虚拟机分配给别人用。
+    **内存溢出：**申请的内存超出了JVM能提供的内存大小，此时称之为溢出。
+  3. OOM的error类型：
+
+    java虚拟机运行时会管理的内存区域：
+    1. 程序计数器：当前线程执行的字节码的行号指示器，线程私有
+    2. JAVA虚拟机栈：Java方法执行的内存模型，灭个Java方法的执行对应着一个栈帧的进栈和出栈的操作。
+    3. 本地方法栈：类似于”JAVA虚拟机栈“，但是为native方法提供内存环境。
+    4. JAVA堆：对象内存分配的地方，内存垃圾回收的主要区域，所有线程共享。可分为新生代，老生代。
+    5. 方法区：用于存储已经被JVM加载的类信息，常量。静态变量、即编译器编译后的代码等数据。HotSpot中的”永久代“。
+    6. 运行时常量池：方法区的一部分，存储常量信息，如各种字面量、符号引用等。
+    7. 直接内存：并不是JVM运行时数据区的一部分，可直接访问的内存比如NIO会用到这部分。
+    
+    所以出了程序计数器不会抛出OOM外，其他各内存区域都可能会抛出OOM。
+    常见OOM情况:
+    1. java.lang.OutOfMemoryError: Java heap space ------>java堆内存溢出，此种情况最常		见，一般由于内存泄露或者堆的大小设置不当引起。对于内存泄露，需要通过内存监控软件查	找程序中的泄露代码，而堆大小可以通过虚拟机参数-Xms,-Xmx等修改。
+    2. java.lang.OutOfMemoryError: PermGen space ------>java永久代溢出，即方法区溢出	了，一般出现于大量Class或者jsp页面，或者采用cglib等反射机制的情况，因为上述情况会产	生大量的Class信息存储于方法区。当出现此种情况时可以通过更改方法区的大小来解决，使用	类似-XX:PermSize=64m -XX:MaxPermSize=256m的形式修改。注意，过多的常量尤其是字符	     串也会导致方法区溢出。
+    3. java.lang.StackOverflowError ------> 不会抛OOM error，但也是比较常见的Java内存溢	出。JAVA虚拟机栈溢出，一般是由于程序中存在死循环或者深度递归调用造成的，栈大小设置	      太小也会出现此种溢出。可以通过虚拟机参数-Xss来设置栈的大小。
+四、OOM分析
+
+Heap Dump（堆转储文件）它是一个Java进程在某个时间点上的内存快照。Heap Dump是有着多种类型的。不过总体上heap dump在触发快照的时候都保存了java对象和类的信息。通常在写heap dump文件前会触发一次FullGC，所以heap dump文件中保存的是FullGC后留下的对象信息。
+
+通过设置如下的JVM参数，可以在发生OutOfMemoryError后获取到一份HPROF二进制Heap Dump文件： 
+
+-XX:+HeapDumpOnOutOfMemoryError
+
+生成的文件会直接写入到工作目录。  
+
+注意：该方法需要JDK5以上版本。 
+
+转存堆内存信息后，需要对文件进行分析，从而找到OOM的原因。可以使用以下方式：
+
+mat: eclipse memory analyzer, 基于eclipse RCP的内存分析工具。具体使用参考：http://www.eclipse.org/mat/，推荐使用。   
+
+jhat：JDK自带的java heap analyze tool，可以将堆中的对象以html的形式显示出来，包括对象的数量，大小等等，并支持对象查询语言OQL，分析相关的应用后，可以通过http://localhost:7000来访问分析结果。不推荐使用。
+#### 垃圾回收
+
+
+2. 怎么判断对象是否被回收
+
+3. 线程和进程的区别
+
+4. 线程的状态
+
+5. 线程池的工作原理
+
+6. 线程池的七大参数
+
+7. 线程池的状态
+
+8. sleep和wait区别
+
+9. Java如何保证线程安全
+
+10. Redis数据类型
+
+11. Redis缓存雪崩、 穿透、击穿
+
+12. 数据结构
+
+13. 线程池原理、参数、缓存队列
+
+14. mybatis底层源码批量插入item index是什么
+
+15. spring配置文件加载过程，spring源码看过么
+
+16. mvc工作原理
+
+17. springcloud组件源码看过么
+
+18. ArrayList和LinkedList区别？为什么前者查询快，增删改查、后者增删改快查询慢？数据扩容的方式？怎么扩容的
+
+19. 锁用过么
+
+20. HsshMap底层原理
+
+21. JVM模型。GC算法。为什么新生代采用复制算法》老年代不用复制算法？复制的区别？为什么要用CMS、G1区别是什么？
+
+22. SQL优化、优化字段最优选什么类型
+
+23. 左旋右旋？
+
+24. 偏各种底层源码、原理、各为什么？
+
+25. 用过哪些集合List、Set、Map、ArrayList和LinkedList、HashMap的底层原理是怎么扩容的
+
+26. JVM构造
+
+27. 堆栈的区别（结合虚拟机中垃圾回收来说一说）
+
+28. 操作系统部分--内存是如何分配的
+
+29. 线程和进程的区别
+
+30. 聊一聊String类，为什么是Final修饰的
+
+31. HashMap和HashTable的区别
+
+32. Spring IoC的好处
+
+33. hashmap原理
+
+34. hashmap在高并发的情况下会出现什么问题
+
+35. concurrenthashamp是如何保证线程安全的？
+
+36. renntrantlock和Synchronized的区别？
+
+37. ReentrantLock公平锁和非公平锁是如何实现的？
+
+38. 膨胀锁（无锁、偏向锁、轻量级锁、重量级锁）？
+
+39. 线程池的七个参数及其介绍（问到在代码中有没有用到过线程池）
+
+40. jvm运行时数据区及其作用？
+
+41. 三种垃圾回收算法？
+
+42. 垃圾回收器（重点详细介绍了CMS的三次标记和G1回收器）
+
+43. 数据库innodb和myISAM的区别？
+
+44. 数据库的索引一般为什么要设置成自增的整数型？
+
+45. 关注原理
+
+46. 项目从哪里来的
+
+# 《深入理解java虚拟机》
+### 第二部分 自动内存管理
+#### 第二章 Java内存区域于内存溢出异常
+##### 运行时数据区域
+![运行时数据区](/img/运行时数据区.png)
+
+##### 对象的创建
+  当JAva虚拟机遇到一条字节码new指令时，首先将去检查这个指令的参数是否能在常量池中定位到一个类的符号引用，并检查这个符号引用代表的类是否已被加载、解析和初始化过。如果美哟 那必须先执行相应的类加载过程。
+#### JVM内存垃圾回收方法
+#### 堆
+  Java堆里面存放着几乎所有对象的实例，垃圾收集器对堆进行回收前，首先要做的就是确定哪些对象可以作为垃圾回收。
+  JDK 1.2后，JAva对引用概念进行了扩充，将引用分为强引用、软引用、弱引用、虚引用、终引用。
+  总的来说，回收的堆对象有两类：
+1、有被引用的对象：即被软引用、弱引用、虚引用所引用的对象可能被JVM强制当成垃圾回收。
+
+1、软引用：软引用对象在系统将要发生内存耗尽（OOM）前会被回收。
+
+2、弱引用：弱引用对象只能躲过一次垃圾回收，躲过一次后就被回收。其一个特点是它何时被回收是不可确定的，因为这是由GC运行的不确定性所确定的。
+
+3、虚引用：虚引用对象肯定会被回收，一个对象是否有虚引用完全不会对其生存时间构成影响，也无法通过虚引用来取得一个对象实例，对象被设置成虚引用关联的唯一作用是在对象被垃圾收集时收到一个系统通知。JDK里的实现是 sun.misc.Cleaner。
+
+4、终引用：当对象实现了finalize方法、该方法未被调用过、方法内部该对象又被成员变量引用，则对象不被回收，否则被回收。具体见下面可达性分析。JDK里的实现是Finalizer。
+
+2、无被引用的对象：需要检查哪些对象已死（没被引用），主要有两种算法检测
+**引用计数法：**对象有个计数器记录被引用的个数，为0者可被回收。采用此法的有微软的COM技术、使用ActionScript3的python等。此法存在对象间循环引用的问题导致对象不能被回收。
+**可达性分析法：**主流Java虚拟机采用此法。选取一系列GC Roots对象组为起点分析引用链确定不可达对象。采用此法的有Java，Lisp等。对不可达的对象，如果其覆盖了finalize()方法并且没被执行郭，则在JVM对之回收前有一次逃过被回收的机会
+```java
+public class FinalizeEscapeGc {
+    private static FinalizeEscapeGc SAVE_HOOK = null;
+
+    public void isAlive(){
+        System.out.println("Yes, I'm still alive");
+    }
+
+    public static void main(String[] args) throws Exception{
+        SAVE_HOOK = new FinalizeEscapeGc();
+        SAVE_HOOK = null;
+        System.gc();
+        Thread.sleep(500);
+        if(SAVE_HOOK != null){
+            SAVE_HOOK.isAlive();
+        }else{
+            System.out.println("No, I'm not alive");
+        }
+        SAVE_HOOK = null;
+        System.gc();
+        Thread.sleep(500);
+        if(SAVE_HOOK != null){
+            SAVE_HOOK.isAlive();
+        }else{
+            System.out.println("No, I'm not alive");
+        }
+    }
+
+    @Override
+    protected void finalize() throws Throwable{
+        super.finalize();
+        System.out.println("FinalizeEscapeGc finalize invoke...");
+        FinalizeEscapeGc.SAVE_HOOK =this;
+    }
+}
+```
