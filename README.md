@@ -962,4 +962,258 @@ public class FinalizeEscapeGc {
 #### 2021/5/7 星期五 晴
 ##### 扫雷项目
 
+#### 2021/5/8 星期六 晴
+  创建应用对象之间协作关系的行为通常称为装配(wiring)，这也是依赖注入（DI）的本质。
+  Spring提供了三种主要的装配机制：
+  1. 在XML中进行显示配置
+  2. 在Java中进行显示配置
+  3. 隐式的bean发现机制和自动装配
 
+    Spring从两个角度来实现自动化装配：
+  1. 组件扫描（component scaning）：Spring会自动发现应用上下文中所创建的bean。
+  2. 自动装配（autowiring）：Spring自动满足bean之间的依赖。
+
+    @conponent注解表明该类会作为组件类，并告知Spring要伟这个类创建bean。
+    @componentScan注解，默认会扫描与配置类相同的包及这个包下面的所有子包，查找带有@component注解的类。
+    通过XML启动组件扫描
+    <context:component-scan base-package="包名" />
+  ##### 为组件扫描的bean命名
+  默认情况下bean的名字为将类名的第一个字母变为小写。
+  也可以使用@Component("bean的id名")
+  还有另一种为bean命名的方式，这种方式不使用@Componnent注解，而是使用Java依赖注入规范中所提及的@Named注解来为bean设置ID：
+  Spring支持将@Named作为Compoent注解的替代方案。两者之间有一些细微的差异，但是在大多数场景中是，它们是可以互换的。
+  #设置组件扫描的基础包
+  @ComponentScan("基础包名")
+  ##### 通过为bean添加注解实现自动装配
+  #### 面向切面的spring
+  在软件开发中，散布于应用中多处的功能被称为横切关注点（cross-cutting concern）。通常来讲，这些横切关注点从概念上是与应用的业务逻辑相分离的（但是往往会直接嵌入到应用的业务逻辑之中）。把这些横切关注点与业务逻辑分离正好是面向切面编程(AOP)所要解决的问题。
+  依赖注入有助于应用对象之间的解耦，而AOP可以实现横切关注点与它们所影响的对象之间解耦。
+  日志是应用切面的常见范例，还有声明式事务。安全和、缓存。
+  ##### 什么是面向切面编程
+  切面能帮助我们模块化关注点。
+  横切关注点可以被模块化为特殊的类，这些类被称为切面（aspect）。这样做有两个好处：首先，现在每个关注点都集中在一个地方，而不是分散到多处代码中；其次，服务模块更简洁，因为它们只包含主要关注点（或核心功能）的diamagnetic，而次要关注点的代码被转移到切面中了。
+  ##### 定义AOP术语
+  通知（advice）、切点（pointcut）和连接点（join point）。
+  **进入某个领域之前，必须学会在这个领域该如何说话**
+  通知（advice）
+  切面的工作被称为通知。
+  通知定义了切面是什么以及何时使用。通知还解决了何时执行这个工作。
+  Spring切面可以应用5种类型的通知：
+  前置通知（before）：在目标方法被调用之前调用通知功能；
+  后置通知（After）：在目标方法完成之后调用通知，此时不会关心方法的 输出后是什么；
+  返回通知（After-returning）：在目标方法成功执行之后调用通知；
+  异常通知（After-throwing）：在目标方法抛出异常后调用通知；
+  环绕通知（Around）：通知包裹了被通知的方法，在被通知的方法调用之前和调用之后执行自定义行为。
+  连接点（Join Point）
+  连接点是应用执行过程种能够插入切面的一个点。切面代码可以利用这些点插入到应用的正常流程之中，并添加新的行为。
+  切点（Pointcut）
+  切面（Aspect）
+  引入（Introductino）
+  织入（weaving）
+  Spring提供了4种类型的AOP支持：
+  基于代理的经典Spring AOP；
+  纯POJO切面
+  @AspectJ注解驱动的切面；
+  注入式AspectJ切面（适用于Spring各版本）。
+  **POJO （Plain Ordinary Java Object）简单的Java对象**
+  DAO（Data Access Object）数据访问对象
+
+#### 2021/5/9 星期天 晴 母亲节
+
+# 淦
+#### 2021/5/10 星期一 晴 热
+#### 每日一题
+0001两数之和
+```java
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
+/*
+  0001求两数之和
+ */
+public class Solution_1 {
+    //暴力法
+    public static int[] towSum_1(int[] nums, int target){
+        for(int i = 0; i < nums.length-1; i++){
+            for(int j = i+1; j < nums.length; j++){
+                if(nums[i]+nums[j] == target){
+                    return new int[]{i,j};
+                }
+            }
+        }
+        return null;
+    }
+    //利用hashmap
+    public static int[] towSum_2(int[] nums, int target) {
+        Map<Integer, Integer> map = new HashMap<>();
+        for (int i = 0; i < nums.length; i++){
+            if(map.containsKey(target-nums[i])){
+                return new int[]{map.get(target-nums[i]),i};
+            }
+            map.put(nums[i], i);
+        }
+        return null;
+    }
+
+    public static void main(String[] args){
+        int[] nums = new int[]{1,2,3,4};
+        int target = 4;
+        int[] re = towSum_1(nums,target);
+        System.out.println(Arrays.toString(re));
+
+        int[] re_2 = towSum_2(nums,target);
+        System.out.println(Arrays.toString(re_2));
+
+    }
+}
+```
+0378从字符串中找出第一个没有重复的字符
+```java
+/*
+    0378从字符串中找出第一个没有重复的字符
+ */
+import java.util.HashMap;
+
+public class Solution_387 {
+    //
+    public static int firstUniqChar(String s){
+        HashMap<Character,Integer> count = new HashMap<>();
+        for(int i = 0; i < s.length(); i++){
+             char c = s.charAt(i);
+             count.put(c, count.getOrDefault(c,0)+1);
+        }
+        for(int i = 0; i < s.length(); i++){
+            if(count.get(s.charAt(i))==1){
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public static void main(String[] args){
+        String s = "leecodtl";
+        System.out.println(firstUniqChar(s));
+    }
+}
+```
+
+0021合并两个有序链表
+
+```java
+import java.util.List;
+
+/*
+    0021合并两个有序链表
+ */
+class ListNode{
+    int val;
+    ListNode next = null;
+
+    ListNode() {}
+
+    ListNode(int val){
+        this.val = val;
+    }
+}
+
+public class Solution_21 {
+    //将数组转换为链表
+    public static ListNode arrayToListNode(int[] s){
+        ListNode head = new ListNode(s[0]);
+        ListNode link = head;
+        for(int i = 1; i < s.length; i++){
+            ListNode temp = new ListNode(s[i]);
+            link.next = temp;
+            link = temp;
+        }
+        return head;
+    }
+    //打印链表
+    public static void printLink(ListNode head){
+        while (head != null){
+                System.out.print(head.val+" ");
+                head = head.next;
+        }
+        System.out.println("");
+    }
+    //插队法-迭代遍历
+    public static ListNode mergeTwoLists(ListNode l1, ListNode l2){
+        ListNode prehead = new ListNode(-1);
+
+        ListNode prev = prehead;
+        while (l1 != null && l2 != null){
+            if(l1.val < l2.val){
+                prev.next = l1;
+                l1 = l1.next;
+            }else{
+                prev.next=l2;
+                l2 = l2.next;
+            }
+            prev = prev.next;
+        }
+        prev.next = l1 == null ? l2 : l1;
+        return  prehead.next;
+    }
+
+    public static void main(String[] args){
+        int[] nums_1 = {1,5,5};
+        int[] nums_2 = {2,4,6};
+        ListNode l1 = arrayToListNode(nums_1);
+        ListNode l2 = arrayToListNode(nums_2);
+        ListNode l3 = mergeTwoLists(l1,l2);
+        printLink(l1);
+        printLink(l2);
+        printLink(l3);
+    }
+}
+
+```
+
+面试题
+
+#### MySQL
+##### 事务的基本要素
+1. 原子性：事务是一个原子操作单元，其对数据的修改，要么全都执行，要么全都不执行。
+2. 一致性：事务开始前和结束后，数据库的完整性约束没有破坏。
+3. 隔离性：同一时间，只允许一个事务请求同一数据，不同的事务之间彼此没有任何干扰。
+4. 持久性：事务完成后，事务对数据库的所有更新将被保存的数据库，不能回滚。
+
+###### 事务的定义
+- Transaction
+- 事务：一个最小的不可再分的工作单元；通常一个事务对应一个完整的业务
+- 一个完整的业务需要批量的DML(insert、update、delete)语句共同联合完成
+- 事务只和DML语句有关，或者说DML语句才有事务。这个和业务逻辑有关，业务逻辑不同，DML语句各个数也不同。
+
+> 以上两台DML语句必须同时成功或失败。最小单元不可再分，当第一条DML语句执行成功后，并不能将底层数据库中的第一个账户的数据修改，只是将操作记录了一下；这个记录是在内存中完成的；当第二条DML语句执行成功后，和底层数据库文件的数据完成同步。若第二条DLM语句执行失败，则清空所有的历史记录操作，要完成以上功能必须借助事务。
+> 
+
+###### 关于事务的一些术语
+- 开启事务：Start Transaction
+- 事务结束：End Transaction
+- 提交事务：Commit Transaction
+- 回滚事务：Rollback Transaction
+
+###### 事务开启的标志？事务结束的标志？
+开启标志
+	任何一条DML语句执行，标志事务的开启
+结束标志
+	提交：成功的结束，将所有DLM语句操作历史记录和底层硬盘数据来一次同步
+	回滚：失败结束，将所有的DML语句操作历史记录全部清空。
+	
+###### 在MySQL中，事务提交与回滚
+> 在MySQL中，默认情况下，事务是自动提交的，也就是说，只要执行一条语句就开启了事务，并提交了事务。
+> 
+
+**以上自动提交机制是可以关闭的**
+
+###### 事务四大特征之一--隔离性（isolaion）
+1. 事务A和事务B之间具有一定的隔离性
+2. 隔离性有4各隔离级别
+	1. 读未提交：read uncommit
+	2. 读已提交：read commit
+	3. 可重复读：repeatable read
+	4. 串行化：serializable
+
+##### Mysql的存储引擎
+1. 
